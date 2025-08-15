@@ -23,6 +23,7 @@ redisClient.on("error", (err) => {
 }); 
 
 const passport = require("passport");
+const cronUnverifiedUser = require("./src/utils/cronunverifiedUser");
 app.use(passport.initialize());
 require("./src/config/passport");
 
@@ -35,7 +36,7 @@ const initializeConnection = async () => {
     // console.log("MongoDB connected");
     await Promise.all([redisClient.connect(), connectDb()]);
     console.log("Redis and MongoDB connected");
-
+      cronUnverifiedUser();
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });

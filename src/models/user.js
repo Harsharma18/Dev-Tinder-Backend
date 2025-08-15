@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const userSchema = new mongoose.Schema(
   {
     firstName: {
@@ -34,6 +35,8 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    verificationEmailToken: { type: String },
+    verificationEmailTokenExpires: { type: Date },
     otp: {
       type: String,
     },
@@ -41,11 +44,11 @@ const userSchema = new mongoose.Schema(
       type: Date,
     },
     otpVerified: {
-  type: Boolean,
-  default: false,
-},
+      type: Boolean,
+      default: false,
+    },
 
-    age: { 
+    age: {
       type: Number,
       min: 18,
     },
@@ -89,6 +92,22 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.comparepassword = async function (candidatepassword) {
   const password = await bcrypt.compare(candidatepassword, this.password);
   return password;
+};
+// Generate & set email verification token
+userSchema.methods.createVerificationToken = function () {
+  if (
+    this.verificationEmailTokenExpires &&
+    this.verificationEmailTokenExpires > Date.now()
+  ) {
+    throw new Error("Please wait before requesting another verification email");
+  }
+  const token = crypto.randomBytes(32).toString("hex");
+  this.verificationEmailToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+  this.verificationEmailTokenExpires = Date.now() + 10 * 60 * 1000; // 10 mins
+  return token;
 };
 const User = mongoose.model("User", userSchema);
 module.exports = User;
